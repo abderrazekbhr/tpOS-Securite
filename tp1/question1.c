@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
-int data = 2;
+const int data = 2;
 int bss;
 char *str = "Hello World!";
 void main_function()
