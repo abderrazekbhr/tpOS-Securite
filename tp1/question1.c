@@ -6,19 +6,17 @@
 #include <sys/wait.h>
 
 // Global variables
-const int data = 2;      // 'data' is a constant, which will be stored in the read-only data segment
-int bss;                 // 'bss' is an uninitialized global variable, which will be stored in the BSS segment
-char *str = "Hello World!"; // 'str' is a pointer to a string, which will be stored in the data segment
+const int data = 2;      
+int bss;                 
+char *str = "Hello World!"; 
 
 // Function prototypes
 void main_function()
 {
-    // This is a dummy function, not doing anything
 }
 
 void libC_function()
 {
-    // This function prints a message to the console
     printf("libC_function\n");
 }
 
@@ -37,19 +35,17 @@ int main()
     int *heap = (int *)malloc(sizeof(int));
     if (heap == NULL)
     {
-        // If allocation fails, print an error message and exit
         fprintf(stderr, "Memory allocation error\n");
         return 1;
     }
     
-    heap[0] = 3; // Assign a value to the allocated memory
+    heap[0] = 3; 
 
-    // Print the address of the dynamically allocated memory (on the heap)
     printf("Address of heap: %p\n", &heap);
     
-    free(heap); // Free the allocated memory
+    free(heap); 
 
-    int stack = 1; // Variable stored on the stack
+    int stack = 1;
 
     // Print the address of the stack variable
     printf("Address of stack: %p\n", &stack);
@@ -62,26 +58,21 @@ int main()
 
     // Display memory map of the process using 'pmap'
 
-    char pid[10]; // Array to hold the process ID as a string
-    snprintf(pid, sizeof(pid), "%d", getpid()); // Get the process ID and store it as a string
+    char pid[10]; 
+    snprintf(pid, sizeof(pid), "%d", getpid()); 
 
     // Fork a child process
     pid_t child = fork();
     if (child == -1)
     {
-        // If fork fails, print an error message and exit
         perror("fork");
         return 1;
     }
     if (child == 0)
     {
-        // Child process
-
-        // Use mmap to allocate memory for 4096 bytes (4KB)
-        char *mmaped = (char *)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        char *mmaped = (char *)mmap(NULL, sizeof(char *), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
         if (mmaped == MAP_FAILED)
         {
-            // If mmap fails, print an error message and exit
             perror("mmap");
             return 1;
         }
@@ -96,13 +87,12 @@ int main()
         int exec_status = execlp("pmap", "pmap", "-X", pid, NULL);
         if (exec_status == -1)
         {
-            // If execlp fails, print an error message and exit
             perror("execlp");
             return 1;
         }
 
         // Unmap the memory region
-        munmap(mmaped, 4096);
+        munmap(mmaped, sizeof(char *));
     }
     else
     {
