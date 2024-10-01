@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 int data = 2;
 int bss;
 char *str = "Hello World!";
@@ -35,27 +36,39 @@ int main()
     printf("addresse de main_function : %p\n", (void *)&main_function);
     printf("addresse de libC_function : %p\n", (void *)&libC_function);
 
-    int fd = open("filename.txt", O_RDWR);
-    char *mmaped = (char *)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (mmaped == MAP_FAILED)
-    {
-        perror("mmap");
-        return 1;
-    }
-    printf("addresse de mmaped: %p\n", (void *)&mmaped);
-    close(fd);
-
     // affichager carte memoir du processus
     char pid[10];
 
-    snprintf(pid, sizeof(pid),"%d", getpid());
-    printf("on est dans le processus %s\n", pid);
-    int exc = execlp("pmap", "pmap", "-X", pid, NULL);
-    if (exc == -1)
+    snprintf(pid, sizeof(pid), "%d", getpid());
+    pid_t fils = fork();
+    if (fils == -1)
     {
-        perror("execlp");
+        perror("fork");
         return 1;
     }
-    munmap(mmaped, 4096);
+    if (fils == 0)
+    {
+        char *mmaped = (char *)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+        if (mmaped == MAP_FAILED)
+        {
+            perror("mmap");
+            return 1;
+        }
+        printf("addresse de mmaped: %p\n", (void *)&mmaped);
+        printf("on est dans le processus %s\n", pid);
+
+        int exc = execlp("pmap", "pmap", "-X", pid, NULL);
+        if (exc == -1)
+        {
+            perror("execlp");
+            return 1;
+        }
+        munmap(mmaped, 4096);
+    }
+    else
+    {
+        wait(NULL);
+    }
+
     return 0;
 }
