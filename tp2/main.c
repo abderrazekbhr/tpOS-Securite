@@ -18,10 +18,10 @@ typedef struct HEADER_TAG
 // } Free_memory_block;
 HEADER *free_head = NULL;
 
-void *malloc_3is(size_t memorySize)
+void *malloc_3is(size_t memory_size)
 {
     HEADER *current = NULL;
-    size_t total_size = sizeof(HEADER) + memorySize + sizeof(MAGIC_NUMBER);
+    size_t total_size = sizeof(HEADER) + memory_size + sizeof(MAGIC_NUMBER);
 
     void *new_block = sbrk(total_size);
     if (new_block == (void *)-1)
@@ -29,9 +29,12 @@ void *malloc_3is(size_t memorySize)
         return NULL;
     }
     current = (HEADER *)new_block;
-    current->bloc_size = total_size;
+    current->bloc_size = memory_size;
     current->ptr_next = NULL;
     current->magic_number = MAGIC_NUMBER;
+    int offset = sizeof(HEADER) + current->bloc_size;
+    long *magic_number = (long *)(current + offset);
+    *magic_number = MAGIC_NUMBER;
     return new_block;
 }
 
@@ -69,7 +72,8 @@ int check_debo(HEADER *head)
 {
     int offset = sizeof(HEADER) + head->bloc_size;
     long *magic_number = (long *)(head + offset);
-    printf("%ld|%ld",head->magic_number,*magic_number);
+    printf("start magic number=%ld\n", head->magic_number);
+    printf("end magic number=%ld\n", *magic_number);
     if (head->magic_number != *magic_number)
     {
         return 0;
@@ -106,7 +110,9 @@ int main()
     displayFreeMemoryBlock();
 
     // Validating third step
-    int test = check_debo(memory_alloc3);
+    int check_debo_test_1 = check_debo(memory_alloc3);
+    memory_alloc1->magic_number = 0x123456789;
+    int check_debo_test_2 = check_debo(memory_alloc1);
     if (test)
     {
         printf("check debo is valid\n");
