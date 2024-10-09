@@ -11,11 +11,6 @@ typedef struct HEADER_TAG
     long magic_number;           /* 0x0123456789ABCDEFL */
 } HEADER;
 
-// typedef struct FREE_MEMORY_BLOCK
-// {
-//     struct FREE_MEMORY_BLOCK *ptr_next;
-//     HEADER *address;
-// } Free_memory_block;
 HEADER *free_head = NULL;
 
 void *malloc_3is(size_t memory_size)
@@ -87,19 +82,19 @@ int main()
     size_t size = 30;
     printf("magic_number : %ld\n", sizeof(MAGIC_NUMBER));
     printf("header : %ld\n", sizeof(HEADER));
-    void *memory_alloc0 = malloc_3is(size);
-    void *end = sbrk(0);
+    HEADER *memory_alloc0 = malloc_3is(size);
+    HEADER *end = sbrk(0);
     printf("init 0: %p\n", memory_alloc0);
     printf("end : %p\n", end);
-    void *memory_alloc1 = malloc_3is(size - 5);
+    HEADER *memory_alloc1 = malloc_3is(size - 5);
     end = sbrk(0);
     printf("init 1: %p\n", memory_alloc1);
     printf("end : %p\n", end);
-    void *memory_alloc2 = malloc_3is(size - 10);
+    HEADER *memory_alloc2 = malloc_3is(size - 10);
     end = sbrk(0);
     printf("init 2: %p\n", memory_alloc2);
     printf("end : %p\n", end);
-    void *memory_alloc3 = malloc_3is(size + 5);
+    HEADER *memory_alloc3 = malloc_3is(size + 5);
     end = sbrk(0);
     printf("init 3: %p\n", memory_alloc3);
     printf("end : %p\n", end);
@@ -111,9 +106,7 @@ int main()
 
     // Validating third step
     int check_debo_test_1 = check_debo(memory_alloc3);
-    memory_alloc1->magic_number = 0x123456789;
-    int check_debo_test_2 = check_debo(memory_alloc1);
-    if (test)
+    if (check_debo_test_1)
     {
         printf("check debo is valid\n");
     }
@@ -122,5 +115,15 @@ int main()
         printf("check debo is not valid\n");
     }
 
+    memory_alloc1->magic_number = 0x123456789;
+    int check_debo_test_2 = check_debo(memory_alloc1);
+    if (check_debo_test_2)
+    { 
+        printf("check debo is valid\n");
+    }
+    else
+    {
+        printf("check debo is not valid\n");
+    }
     return 0;
 }
