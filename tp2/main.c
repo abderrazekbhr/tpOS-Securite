@@ -20,19 +20,18 @@ HEADER *free_head = NULL;
 
 void *malloc_3is(size_t memorySize)
 {
+    HEADER *current = NULL;
     size_t total_size = sizeof(HEADER) + memorySize + sizeof(MAGIC_NUMBER);
-    void *init = sbrk(0);
 
     void *new_block = sbrk(total_size);
     if (new_block == (void *)-1)
     {
         return NULL;
     }
-    void *end = sbrk(0);
-    if (init == end)
-    {
-        return NULL;
-    }
+    current = (HEADER *)new_block;
+    current->bloc_size = total_size;
+    current->ptr_next = NULL;
+    current->magic_number = MAGIC_NUMBER;
     return new_block;
 }
 
@@ -66,6 +65,18 @@ void displayFreeMemoryBlock()
     }
 }
 
+int check_debo(HEADER *head)
+{
+    int offset = sizeof(HEADER) + head->bloc_size;
+    long *magic_number = (long *)(head + offset);
+    printf("%ld|%ld",head->magic_number,*magic_number);
+    if (head->magic_number != *magic_number)
+    {
+        return 0;
+    }
+    return 1;
+}
+
 int main()
 {
     // Validating first step
@@ -93,6 +104,17 @@ int main()
     free_3is(memory_alloc0);
     free_3is(memory_alloc2);
     displayFreeMemoryBlock();
+
+    // Validating third step
+    int test = check_debo(memory_alloc3);
+    if (test)
+    {
+        printf("check debo is valid\n");
+    }
+    else
+    {
+        printf("check debo is not valid\n");
+    }
 
     return 0;
 }
