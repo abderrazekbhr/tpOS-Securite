@@ -29,3 +29,38 @@ typedef struct HEADER_TAG
     long magic_number;           /* Magic number for integrity check */
 } HEADER;
 ```
+## Functions
+
+### Memory Management Functions
+
+- **`void *malloc_3is(size_t memory_size)`**
+  - Allocates a block of memory of the specified size.
+  - Returns a pointer to the allocated memory or `NULL` if allocation fails.
+
+- **`void free_3is(HEADER *ptr)`**
+  - Frees a previously allocated memory block and adds it back to the free list.
+
+- **`HEADER *reuse_memory_block(size_t memory_size)`**
+  - Reuses a free memory block of the specified size if available.
+
+- **`void *cut_memory_by_size(size_t memory_size)`**
+  - Cuts a memory block to fit the specified size and returns a pointer to the new block.
+
+### Utility Functions
+
+- **`void display_free_memory_block()`**
+  - Displays the current state of the free memory blocks.
+
+- **`int check_debo(HEADER *head)`**
+  - Checks if a memory block's integrity is valid using the magic number.
+
+- **`void merge_adjacent_blocks()`**
+  - Merges adjacent free blocks to reduce fragmentation.
+
+- **`void sort_free_list_by_address()`**
+  - Sorts the list of free blocks by their memory addresses.
+
+### Random Magic Number Generator
+
+- **`long generate_random_magic_number()`**
+  - Generates a random magic number, though not used in the current implementation.

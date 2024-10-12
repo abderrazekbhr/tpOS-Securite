@@ -328,7 +328,6 @@ int main()
     {
         printf("Cut memory by size with 12 as size block: %p | size = %ld\n", memory_alloc5, memory_alloc5->block_size);
         free_3is(memory_alloc5);
-        display_free_memory_block();
     }
     else
     {
