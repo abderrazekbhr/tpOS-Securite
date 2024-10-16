@@ -1,0 +1,8 @@
+# Ignorer .vscode
+.vscode
+# Ignorer les fichiers exécutables en C
+tp1/*.out     # Fichiers exécutables sous Linux
+tp1/*.exe     # Fichiers exécutables sous Windows
+tp1/*.o       # Fichiers objets générés lors de la compilation
+tp1/*.a       # Fichiers d'archive statiques
+tp1/*.so      # Bibliothèques partagées (sous Linux)
