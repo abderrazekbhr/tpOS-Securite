@@ -6,3 +6,6 @@ tp1/*.exe     # Fichiers exécutables sous Windows
 tp1/*.o       # Fichiers objets générés lors de la compilation
 tp1/*.a       # Fichiers d'archive statiques
 tp1/*.so      # Bibliothèques partagées (sous Linux)
+*/*.o        # Fichiers objets générés lors de la compilation
+*/*.a         # Fichiers d'archive statiques
+*/*.so        # Bibliothèques partagées (sous Linux)
