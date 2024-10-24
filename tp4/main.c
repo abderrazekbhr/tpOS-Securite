@@ -13,12 +13,12 @@ segment *buf;
 
 void initialize()
 {
-    if ((semid = semget(cle, 3, 0666)) == -1)
+
+    if ((semid = semget(cle, 3, IPC_CREAT | 0666)) == -1)
     {
         perror("Erreur lors de la récupération de semid");
         exit(1);
     }
-
     if ((shmid = shmget(cle, segsize, 0666)) == -1)
     {
         perror("Erreur lors de la récupération de shmid");
@@ -51,21 +51,15 @@ int main()
     long local_avg = sum / maxval;
 
     acq_sem(semid, seg_dispo);
-
     segment *seg = buf;
     seg->pid = getpid();
     seg->req = 1;
     seg->result = local_avg;
 
-    for (int i = 0; i < maxval; i++)
-    {
-        seg->tab[i] = array[i];
-    }
-
-    lib_sem(semid, seg_init);
-
     wait_sem(semid, res_ok);
-
+    
+    printf("Requête %d : résultat prêt\n", seg->req);
+    // Vérification du résultat calculé par un autre processus
     if (seg->result == local_avg)
     {
         printf("Requête %d : succès, moyenne correcte (%ld)\n", seg->req, seg->result);
@@ -75,9 +69,11 @@ int main()
         printf("Requête %d : échec, moyenne incorrecte (%ld au lieu de %ld)\n", seg->req, seg->result, local_avg);
     }
 
+    // Libérer les sémaphores pour indiquer la fin du traitement
     lib_sem(semid, seg_init);
     lib_sem(semid, seg_dispo);
 
+    // Détacher le segment de mémoire partagée
     if (shmdt(buf) == -1)
     {
         perror("Erreur lors du détachement de la mémoire partagée");
