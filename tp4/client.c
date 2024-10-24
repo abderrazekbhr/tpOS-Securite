@@ -46,11 +46,15 @@ int initialization()
     init_rand();
     return 0;
 }
+
+// Step 2
 void process_requests(int num_requests)
 {
     for (int i = 0; i < num_requests; i++)
     {
+        // Step 2.1
         acq_sem(semid_dispo, seg_dispo);
+        // Stre 2.2
         segment *seg = (segment *)buf;
         seg->pid = getpid();
         seg->req = i + 1;
@@ -62,13 +66,19 @@ void process_requests(int num_requests)
         }
         long local_result = local_sum / maxval;
         seg->result = 0;
+        // Step 2.3
         acq_sem(semid_init, seg_init);
+        // Step 2.4
         wait_sem(semid_res, res_ok);
+        // Step 2.5
+        long server_result = seg->result;
         lib_sem(semid_init, seg_init);
+        // Step 2.6
         lib_sem(semid_dispo, seg_dispo);
         // printf("Requête %d - PID %d\n", seg->req, seg->pid);
         //printf("req: %d => pid: %d | ppid: %d , Résultat local: %ld, Résultat serveur: %ld\n", seg->req, getpid(), getppid(), local_result, seg->result);
-        if (local_result == seg->result)
+        // Step 2.7
+        if (local_result == server_result)
         {
             printf("Les résultats sont identiques\n");
         }
@@ -78,6 +88,7 @@ void process_requests(int num_requests)
         }
     }
 }
+// Step 3
 void cleanup()
 {
     if (shmdt(buf) == -1)

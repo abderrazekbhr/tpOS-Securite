@@ -1,97 +1,106 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
 #include <unistd.h>
-#include "ressources/segdef.h" // Contient les définitions des constantes et la structure SEGMENT
+#include "./ressources/segdef.h"
+#include <sys/wait.h>
+int shmid, semid_dispo, semid_init, semid_res;
+char *buf;
 
-// Déclaration du segment mémoire
-segment *shmseg;
-int shmid, semid;
-
-void initialize()
+// Step 1
+int initialization()
 {
-
-    if ((semid = semget(cle, 3, IPC_CREAT | 0666)) == -1)
+    // Step 1.1
+    shmid = shmget(cle, segsize, IPC_CREAT | 0666);
+    if (shmid == -1)
     {
-        perror("Erreur lors de la récupération de semid");
-        exit(1);
+        perror("shmget");
+        return 1;
     }
-    if ((shmid = shmget(cle, segsize, 0666)) == -1)
+    semid_dispo = semget(cle, seg_dispo, IPC_CREAT | 0666);
+    if (semid_dispo == -1)
     {
-        perror("Erreur lors de la récupération de shmid");
-        exit(1);
+        perror("semget");
+        return 1;
     }
-
-    // Attacher le segment de mémoire partagée
-    shmseg = (segment *)shmat(shmid, NULL, 0);
-    if (shmseg == (void *)-1)
+    semid_init = semget(cle, seg_init, IPC_CREAT | 0666);
+    if (semid_init == -1)
     {
-        perror("Erreur shmat");
-        exit(1);
+        perror("semget");
+        return 1;
     }
-
-    // Initialiser le générateur de nombres aléatoires
+    semid_res = semget(cle, res_ok, IPC_CREAT | 0666);
+    if (semid_res == -1)
+    {
+        perror("semget");
+        return 1;
+    }
+    // Step 1.2
+    buf = shmat(shmid, 0, 0);
+    if (buf == (char *)-1)
+    {
+        perror("shmat");
+        return 1;
+    }
+    // Step 1.3
     init_rand();
+    return 0;
 }
 
+// Step 2
 void process_requests(int num_requests)
 {
     for (int i = 0; i < num_requests; i++)
     {
-        // 1. Acquérir le sémaphore seg_dispo pour accéder à la mémoire partagée
-        acq_sem(semid, seg_dispo);
-
-        // 2. Initialiser le segment : PID, numéro de requête, tableau de valeurs aléatoires
-        shmseg->pid = getpid();
-        shmseg->req = i + 1;
+        // Step 2.1
+        acq_sem(semid_dispo, seg_dispo);
+        // Stre 2.2
+        segment *seg = (segment *)buf;
+        seg->pid = getpid();
+        seg->req = i + 1;
         long local_sum = 0;
-
         for (int j = 0; j < maxval; j++)
         {
-            shmseg->tab[j] = getrand(); // Générer un nombre aléatoire
-            local_sum += shmseg->tab[j];
+            seg->tab[j] = getrand();
+            local_sum += seg->tab[j];
         }
         long local_result = local_sum / maxval;
-        shmseg->result = 0;
-
-        // 3. Signaler au serveur que le segment est initialisé
-        lib_sem(semid, seg_init);
-
-        // 4. Attendre que le serveur signale que le résultat est prêt
-        acq_sem(semid, res_ok);
-
-        // 5. Comparer les résultats (local et serveur)
-        printf("Requête %d - PID %d\n", shmseg->req, shmseg->pid);
-        printf("Résultat local: %ld, Résultat serveur: %ld\n", local_result, shmseg->result);
-
-        // 6. Libérer les sémaphores seg_init et seg_dispo
-        lib_sem(semid, seg_init);
-        lib_sem(semid, seg_dispo);
+        seg->result = 0;
+        // Step 2.3
+        acq_sem(semid_init, seg_init);
+        // Step 2.4
+        wait_sem(semid_res, res_ok);
+        // Step 2.5
+        long server_result = seg->result;
+        lib_sem(semid_init, seg_init);
+        // Step 2.6
+        lib_sem(semid_dispo, seg_dispo);
+        // printf("Requête %d - PID %d\n", seg->req, seg->pid);
+        //printf("req: %d => pid: %d | ppid: %d , Résultat local: %ld, Résultat serveur: %ld\n", seg->req, getpid(), getppid(), local_result, seg->result);
+        // Step 2.7
+        if (local_result == server_result)
+        {
+            printf("Les résultats sont identiques\n");
+        }
+        else
+        {
+            printf("Les résultats sont différents\n");
+        }
     }
 }
+// Step 3
 void cleanup()
 {
-    // Détacher la mémoire partagée
-    if (shmdt(shmseg) == -1)
+    if (shmdt(buf) == -1)
     {
         perror("Erreur shmdt");
         exit(1);
     }
 }
+
 int main()
 {
-    int num_requests = 10; // Nombre de requêtes à effectuer
-
-    // 1. Initialisation
-    init();
-
-    // 2. Traiter les requêtes
-    process_requests(num_requests);
-
-    // 3. Nettoyer et détacher la mémoire
+    initialization();
+    process_requests(10);
     cleanup();
-
     return 0;
 }
