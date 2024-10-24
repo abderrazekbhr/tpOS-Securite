@@ -69,6 +69,8 @@ static void hello_ll_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
 		e.attr_timeout = 1.0;
 		e.entry_timeout = 1.0;
 		hello_stat(e.ino, &e.attr);
+		printf("e.ino = %d\n", e.ino);
+		printf("%d\n", &e.attr.st_blocks);
 
 		fuse_reply_entry(req, &e);
 	}
