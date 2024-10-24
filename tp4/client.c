@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "./ressources/segdef.h"
-
+#include <sys/wait.h>
 int shmid, semid_dispo, semid_init, semid_res;
 char *buf;
 
+// Step 1
 int initialization()
 {
+    // Step 1.1
     shmid = shmget(cle, segsize, IPC_CREAT | 0666);
     if (shmid == -1)
     {
@@ -33,13 +35,14 @@ int initialization()
         perror("semget");
         return 1;
     }
-
+    // Step 1.2
     buf = shmat(shmid, 0, 0);
     if (buf == (char *)-1)
     {
         perror("shmat");
         return 1;
     }
+    // Step 1.3
     init_rand();
     return 0;
 }
@@ -63,14 +66,47 @@ void process_requests(int num_requests)
         wait_sem(semid_res, res_ok);
         lib_sem(semid_init, seg_init);
         lib_sem(semid_dispo, seg_dispo);
-        printf("Requête %d - PID %d\n", seg->req, seg->pid);
-        printf("Résultat local: %ld, Résultat serveur: %ld\n", local_result, seg->result);
+        // printf("Requête %d - PID %d\n", seg->req, seg->pid);
+        //printf("req: %d => pid: %d | ppid: %d , Résultat local: %ld, Résultat serveur: %ld\n", seg->req, getpid(), getppid(), local_result, seg->result);
+        if (local_result == seg->result)
+        {
+            printf("Les résultats sont identiques\n");
+        }
+        else
+        {
+            printf("Les résultats sont différents\n");
+        }
+    }
+}
+void cleanup()
+{
+    if (shmdt(buf) == -1)
+    {
+        perror("Erreur shmdt");
+        exit(1);
+    }
+}
+
+void calculate(int pid, int nb_process)
+{
+
+    for (int i = 0; i < nb_process; i++)
+    {
+        if (pid == getpid())
+        {
+            if (fork() == 0)
+            {
+                process_requests(5);
+            }
+            wait(NULL);
+        }
     }
 }
 
 int main()
 {
     initialization();
-    process_requests(5);
+    calculate(getpid(), 100);
+    cleanup();
     return 0;
 }
