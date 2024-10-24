@@ -1,15 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
 #include <sys/ipc.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
-#include <errno.h>
-#include "resources/segdef.h"
+#include <sys/sem.h>
+#include <unistd.h>
+#include "resources/segdef.h" // Contient les définitions des constantes et la structure SEGMENT
 
+// Déclaration du segment mémoire
+segment *shmseg;
 int shmid, semid;
-segment *buf;
 
 void initialize()
 {
@@ -25,28 +24,49 @@ void initialize()
         exit(1);
     }
 
-    printf("ID de la mémoire partagée : %d\n", shmid);
-
-    if ((buf = (segment *)shmat(shmid, NULL, 0)) == (void *)-1)
-    {
-        perror("Erreur lors de l'attachement du segment de mémoire partagée");
+    // Attacher le segment de mémoire partagée
+    shmseg = (segment *)shmat(shmid, NULL, 0);
+    if (shmseg == (void *)-1) {
+        perror("Erreur shmat");
         exit(1);
     }
 
+    // Initialiser le générateur de nombres aléatoires
     init_rand();
 }
 
-int main()
-{
-    initialize();
+void process_requests(int num_requests) {
+    for (int i = 0; i < num_requests; i++) {
+        // 1. Acquérir le sémaphore seg_dispo pour accéder à la mémoire partagée
+        acq_sem(semid, seg_dispo);
 
-    long array[maxval], sum = 0;
+        // 2. Initialiser le segment : PID, numéro de requête, tableau de valeurs aléatoires
+        shmseg->pid = getpid();
+        shmseg->req = i + 1;
+        long local_sum = 0;
 
-    for (int i = 0; i < maxval; i++)
-    {
-        array[i] = getrand();
-        sum += array[i];
+        for (int j = 0; j < maxval; j++) {
+            shmseg->tab[j] = getrand();  // Générer un nombre aléatoire
+            local_sum += shmseg->tab[j];
+        }
+        long local_result = local_sum / maxval;
+        shmseg->result = 0;
+
+        // 3. Signaler au serveur que le segment est initialisé
+        lib_sem(semid, seg_init);
+
+        // 4. Attendre que le serveur signale que le résultat est prêt
+        acq_sem(semid, res_ok);
+
+        // 5. Comparer les résultats (local et serveur)
+        printf("Requête %d - PID %d\n", shmseg->req, shmseg->pid);
+        printf("Résultat local: %ld, Résultat serveur: %ld\n", local_result, shmseg->result);
+
+        // 6. Libérer les sémaphores seg_init et seg_dispo
+        lib_sem(semid, seg_init);
+        lib_sem(semid, seg_dispo);
     }
+<<<<<<< HEAD:tp4/main.c
 
     long local_avg = sum / maxval;
 
@@ -77,8 +97,27 @@ int main()
     if (shmdt(buf) == -1)
     {
         perror("Erreur lors du détachement de la mémoire partagée");
+=======
+}
+void cleanup() {
+    // Détacher la mémoire partagée
+    if (shmdt(shmseg) == -1) {
+        perror("Erreur shmdt");
+>>>>>>> 3649ef15dd251df6207f97bf15ab07d1ace0aab8:tp4/other.c
         exit(1);
     }
+}
+int main() {
+    int num_requests = 10;  // Nombre de requêtes à effectuer
+
+    // 1. Initialisation
+    init();
+
+    // 2. Traiter les requêtes
+    process_requests(num_requests);
+
+    // 3. Nettoyer et détacher la mémoire
+    cleanup();
 
     return 0;
 }
