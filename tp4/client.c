@@ -72,9 +72,8 @@ void process_requests(int num_requests)
         wait_sem(semid_res, res_ok);
         // Step 2.5
         long server_result = seg->result;
-        lib_sem(semid_init, seg_init);
-        // Step 2.6
-        lib_sem(semid_dispo, seg_dispo);
+        
+        
         // printf("Requête %d - PID %d\n", seg->req, seg->pid);
         //printf("req: %d => pid: %d | ppid: %d , Résultat local: %ld, Résultat serveur: %ld\n", seg->req, getpid(), getppid(), local_result, seg->result);
         // Step 2.7
@@ -86,6 +85,9 @@ void process_requests(int num_requests)
         {
             printf("Les résultats sont différents\n");
         }
+        lib_sem(semid_init, seg_init);
+        // Step 2.6
+        lib_sem(semid_dispo, seg_dispo);
     }
 }
 // Step 3
@@ -114,10 +116,14 @@ void calculate(int pid, int nb_process)
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    if(argc != 2){
+        printf("Usage: %s <nb_process>\n", argv[0]);
+        return 1;
+    }
     initialization();
-    calculate(getpid(), 100);
+    calculate(getpid(), atoi(argv[1]));
     cleanup();
     return 0;
 }
